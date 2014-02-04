@@ -20,6 +20,11 @@ indexes:
   - name: room
   - name: when
 
+- kind: Player
+  ancestor: yes
+  properties:
+  - name: when
+
 - kind: Presence
   ancestor: yes
   properties:

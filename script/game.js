@@ -12,9 +12,10 @@ $(document).ready(function() {
     }
 
     document.turn = 0;
+    document.refresh_rate = 1000;
     document.game = getJsonFromUrl().game;
     var keepalive = function() {
-        setTimeout(keepalive, 1000);
+        setTimeout(keepalive, document.refresh_rate);
         $.ajax('/api', {
             data: {
                 g: document.game,
@@ -24,6 +25,10 @@ $(document).ready(function() {
         });
     };
     var update_users = function(response) {
+        document.refresh_rate = response.refresh_rate;
+        if (response.timed_out) {
+            window.location = "/?timed_out=" + document.game;
+        }
         table = $("#votes");
         table.empty();
         if(response.turn > document.turn) {

@@ -1,23 +1,28 @@
 from google.appengine.api import users
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from datetime import datetime, timedelta
 import json
 import webapp2
 
 ESTIMATES = [1, 2, 3, 5, 8, 13, 20, 40, 100, '?', 'unvote']
 KEEPALIVE_TIMEOUT = 10
+IDLE_TIMEOUT = 300
 
-class Vote(db.Model):
-    game = db.StringProperty(indexed=True)
-    user = db.UserProperty(indexed=True)
-    turn = db.IntegerProperty(indexed=True)
-    vote = db.StringProperty()
-    when = db.DateTimeProperty(auto_now=True)
+
+class Vote(ndb.Model):
+    user = ndb.UserProperty(indexed=True)
+    turn = ndb.IntegerProperty(indexed=True)
+    vote = ndb.StringProperty()
+    when = ndb.DateTimeProperty(auto_now=True)
+
+    @classmethod
+    def key(cls, game):
+        return ndb.Key('Vote', game)
 
     @classmethod
     def read_single(cls, game, user, turn):
         turn = int(turn)
-        votes = list(cls.gql("WHERE game = :1 AND user = :2 AND turn = :3", game, user, turn))
+        votes = list(cls.gql("WHERE user = :1 AND turn = :2 AND ANCESTOR IS :3", user, turn, Vote.key(game)))
         if len(votes) == 0:
             return None
         else:
@@ -26,7 +31,7 @@ class Vote(db.Model):
     @classmethod
     def read_all(cls, game, turn):
         turn = int(turn)
-        votes = list(cls.gql("WHERE game = :1 AND turn = :2", game, turn))
+        votes = list(cls.gql("WHERE turn = :1 AND ANCESTOR IS :2", turn, Vote.key(game)))
         if len(votes) == 0:
             return []
         else:
@@ -35,23 +40,27 @@ class Vote(db.Model):
     @classmethod
     def cast(cls, game, user, turn, vote):
         turn = int(turn)
-        votes = list(cls.gql("WHERE game = :1 AND user = :2 AND turn = :3", game, user, turn))
+        votes = list(cls.gql("WHERE user = :1 AND turn = :2 AND ANCESTOR IS :3", user, turn, Vote.key(game)))
         if len(votes) == 0:
-            vote = Vote(game=game, user=user, turn=turn, vote=vote)
-            vote.save()
+            vote = Vote(user=user, turn=turn, vote=vote, parent=cls.key(game))
+            vote.put()
         else:
             votes[0].vote = vote
-            votes[0].save()
+            votes[0].put()
 
     def __repr__(self):
-        return "<vote %s %s t%s %s>" % (self.game, self.user, self.turn, self.vote)
+        return "<vote %s %s t%s %s>" % (self._entity_key, self.user, self.turn, self.vote)
 
 
-class Player(db.Model):
+class Player(ndb.Model):
     """Models a user's attendance in a game"""
-    user = db.UserProperty()
-    game = db.StringProperty(indexed=True)
-    when = db.DateTimeProperty(auto_now=True)
+    user = ndb.UserProperty()
+    when = ndb.DateTimeProperty(auto_now=True)
+    idle_since = ndb.DateTimeProperty(auto_now_add=True)
+
+    @classmethod
+    def key(cls, game):
+        return ndb.Key('Player', game)
 
     @classmethod
     def load(cls, user=None, game=None):
@@ -59,10 +68,10 @@ class Player(db.Model):
             user = users.get_current_user()
         if user is None:
             return None
-        players = list(cls.gql("WHERE user = :1 AND game = :2", user, game))
+        players = list(cls.gql("WHERE user = :1 AND ANCESTOR IS :2", user, Player.key(game)))
         if len(players) == 0:
-            player =  Player(user=user, game=game)
-            player.save()
+            player =  Player(user=user, parent=cls.key(game))
+            player.put()
             return player
         else:
             return players[0]
@@ -75,21 +84,21 @@ class Player(db.Model):
         return name
 
     def checkin(self):
-        self.save()  # just updates timestamp
+        self.put()  # just updates timestamp
 
     @classmethod
     def get_players_in_game(self, game):
         cutoff = datetime.today() - timedelta(seconds=KEEPALIVE_TIMEOUT)
-        return list(self.gql("WHERE game = :1 AND when >= :2", game, cutoff))
+        return list(self.gql("WHERE when >= :1 AND ANCESTOR IS :2", cutoff, Player.key(game)))
 
     def __eq__(self, other):
         return (True
             and isinstance(other, self.__class__)
-            and self.game == other.game 
+            and self._entity_key == other._entity_key 
             and self.user == other.user)
 
     def __repr__(self):
-        return "<player %s g:%s>" % (self.name, self.game)
+        return "<player %s g:%s>" % (self.name, self._entity_key)
 
 
 class MainPage(webapp2.RequestHandler):
@@ -106,17 +115,25 @@ class MainPage(webapp2.RequestHandler):
             <link rel="stylesheet" href="style/scrumsize.css" type="text/css" />
             """)
         game = self.request.get('game', None)
+        timeout_html = ""
+        booted_from = self.request.get('timed_out', None)
+        if booted_from is not None:
+            timeout_html = "<p>timed out of %s</p><p><a href='/?game=%s'>rejoin %s</a></p>" % (booted_from, booted_from, booted_from)
         if game is not None:
+            player = Player.load(user=user, game=game)
+            player.idle_since = datetime.today()
+            player.put()
             return self.draw_game(game)
         else:
             self.response.write("""
                 <title>Planning Poker: Lobby</title>
                 <h1>Planning Poker</h1>
+                %s
                 <form>
                     <input type='text' style="width:200px;" name='game' placeholder='game name (any string)'></input>
                     <input type='submit' value='Join game'></input>
                 </form>
-                """);
+                """ % timeout_html);
 
     def draw_game(self, game):
         self.response.write("""
@@ -160,11 +177,14 @@ class Api(webapp2.RequestHandler):
             if vote == 'unvote':
                 vote = None
             Vote.cast(game, player.user, turn, vote)
+            player.idle_since = datetime.today()
+            player.put()
 
         while None not in [Vote.read_single(game, opp.user, turn) for opp in opponents]:
             turn += 1
 
         response = {'opponents': sorted([o.name for o in opponents])}
+        response['refresh_rate'] = 1000
         response['last_vote'] = {}
         response['this_vote'] = {}
         response['next_vote'] = {}
@@ -173,6 +193,9 @@ class Api(webapp2.RequestHandler):
             response['this_vote'][opp.name] = Vote.read_single(game, opp.user, turn - 1)
             response['next_vote'][opp.name] = Vote.read_single(game, opp.user, turn)
         response['turn'] = turn;
+        if datetime.today() - player.idle_since > timedelta(seconds=IDLE_TIMEOUT):
+            response['timed_out'] = True
+
         self.response.write(json.dumps(response));
             
 
