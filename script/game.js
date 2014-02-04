@@ -1,5 +1,4 @@
 $(document).ready(function() {
-    console.log(1);
 
     function getJsonFromUrl() {
         var query = location.search.substr(1);
@@ -27,7 +26,6 @@ $(document).ready(function() {
     var update_users = function(response) {
         table = $("#votes");
         table.empty();
-        // console.log(response);
         if(response.turn > document.turn) {
             document.turn = response.turn;
         }

@@ -157,9 +157,9 @@ class Api(webapp2.RequestHandler):
             if vote == 'unvote':
                 vote = None
             Vote.cast(game, player.user, turn, vote)
-        else:
-            if None not in [Vote.read_single(game, opp.user, turn) for opp in opponents]:
-                turn += 1
+
+        while None not in [Vote.read_single(game, opp.user, turn) for opp in opponents]:
+            turn += 1
 
         response = {'opponents': sorted([o.name for o in opponents])}
         response['last_vote'] = {}
