@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+appcfg.py --no_cookies --email=jmathes@gmail.com --passin update .
