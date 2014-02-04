@@ -14,6 +14,7 @@ $(document).ready(function() {
     document.turn = 0;
     document.game = getJsonFromUrl().game;
     var keepalive = function() {
+        setTimeout(keepalive, 1000);
         $.ajax('/api', {
             data: {
                 g: document.game,
@@ -21,7 +22,6 @@ $(document).ready(function() {
             },
             success: update_users
         });
-        setTimeout(keepalive, 1000);
     };
     var update_users = function(response) {
         table = $("#votes");
@@ -35,10 +35,10 @@ $(document).ready(function() {
             var next_vote = response.next_vote[opp] === null ? "waiting" : "ready";
             table
                 .append($('<tr>')
-                    .append($('<td>').text(opp))
-                    .append($('<td class="last value ' + last_vote + '">').text(last_vote))
-                    .append($('<td class="this value ' + this_vote + '">').text(this_vote))
-                    .append($('<td class="next value ' + next_vote + '">').text(next_vote))
+                    .append($('<td class="name">').text(opp).css('color', '#' + md5(opp).substr(4,6)))
+                    .append($('<td class="last estimate value e' + last_vote + '">').text(last_vote))
+                    .append($('<td class="this estimate value e' + this_vote + '">').text(this_vote))
+                    .append($('<td class="next estimate mask e' + next_vote + '">').text(next_vote))
                     );
         });
     };

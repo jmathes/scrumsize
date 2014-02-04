@@ -5,7 +5,7 @@ import json
 import webapp2
 
 ESTIMATES = [1, 2, 3, 5, 8, 13, 20, 40, 100, '?', 'unvote']
-KEEPALIVE_TIMEOUT = 2
+KEEPALIVE_TIMEOUT = 5
 
 class Vote(db.Model):
     game = db.StringProperty(indexed=True)
@@ -119,6 +119,7 @@ class MainPage(webapp2.RequestHandler):
 
     def draw_game(self, game):
         self.response.write("""
+            <script type="text/javascript" src="/script/md5.js"></script>
             <script type="text/javascript" src="/script/game.js"></script>
             """)
         self.response.write("<title>%s</title>" % game)
@@ -133,9 +134,10 @@ class MainPage(webapp2.RequestHandler):
                 </tbody>
             </table>
             """)
+        self.response.write("<hr>")
         for estimate in ESTIMATES:
             estr = str(estimate)
-            button = "<button class='estimate %s' value='%s' id='%s'>%s</button>" % (estr, estr, estr, estr)
+            button = "<button class='estimate e%s' value='%s' id='%s'>%s</button>" % (estr, estr, estr, estr)
             self.response.write(button)
 
 class Api(webapp2.RequestHandler):

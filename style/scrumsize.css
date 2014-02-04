@@ -6,6 +6,38 @@ table {
     border-spacing: 10px;
 }
 
-.next.value {
+.next.mask {
     font-style:italic;
+}
+
+button,td.value,.name {
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    color:#0000ff;
+}
+.estimate.e1 {
+    color:#00ff00;
+}
+.estimate.e2 {
+    color:#1fdf00;
+}
+.estimate.e3 {
+    color:#3fbf00;
+}
+.estimate.e5 {
+    color:#5f9f00;
+}
+.estimate.e8 {
+    color:#7f7f00;
+}
+.estimate.e13 {
+    color:#9f5f00;
+}
+.estimate.e20 {
+    color:#bf3f00;
+}
+.estimate.e40 {
+    color:#df1f00;
+}
+.estimate.e100 {
+    color:#ff0000;
 }
