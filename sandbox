@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+dev_appserver.py --clear_datastore true ./
