@@ -5,13 +5,14 @@ import json
 import webapp2
 
 ESTIMATES = [1, 2, 3, 5, 8, 13, 20, 40, 100, '?', 'unvote']
-KEEPALIVE_TIMEOUT = 5
+KEEPALIVE_TIMEOUT = 10
 
 class Vote(db.Model):
     game = db.StringProperty(indexed=True)
     user = db.UserProperty(indexed=True)
     turn = db.IntegerProperty(indexed=True)
     vote = db.StringProperty()
+    when = db.DateTimeProperty(auto_now=True)
 
     @classmethod
     def read_single(cls, game, user, turn):
