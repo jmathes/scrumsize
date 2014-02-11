@@ -109,6 +109,9 @@ class MainPage(webapp2.RequestHandler):
             return self.redirect(users.create_login_url(self.request.uri))
 
         self.response.headers['Content-Type'] = 'text/html'
+        self.response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        self.response.headers['Pragma'] = 'no-cache'
+        self.response.headers['Expires'] = '0'
         self.response.write("""
             <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
             <script src="/script/scrumsize.js"></script>
