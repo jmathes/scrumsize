@@ -27,7 +27,7 @@ $(document).ready(function() {
     var update_users = function(response) {
         document.refresh_rate = response.refresh_rate;
         if (response.timed_out) {
-            window.location = "/?timed_out=" + document.game;
+            // window.location = "/?timed_out=" + document.game;
         }
         table = $("#votes");
         table.empty();
