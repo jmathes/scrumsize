@@ -5,8 +5,8 @@ import json
 import webapp2
 
 ESTIMATES = [1, 2, 3, 5, 8, 13, 20, 40, 100, '?', 'unvote']
-KEEPALIVE_TIMEOUT = 10
-IDLE_TIMEOUT = 300
+KEEPALIVE_TIMEOUT = 30
+IDLE_TIMEOUT = 1200
 
 
 class Vote(ndb.Model):
