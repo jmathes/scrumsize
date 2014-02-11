@@ -118,7 +118,7 @@ class MainPage(webapp2.RequestHandler):
         timeout_html = ""
         booted_from = self.request.get('timed_out', None)
         if booted_from is not None:
-            timeout_html = "<p>timed out of %s</p><p><a href='/?%s'>rejoin %s</a></p>" % (booted_from, booted_from, booted_from)
+            timeout_html = "<p>timed out of %s</p><p><a href='/?game=%s'>rejoin %s</a></p>" % (booted_from, booted_from, booted_from)
         if game is not None:
             player = Player.load(user=user, game=game)
             player.idle_since = datetime.today()
