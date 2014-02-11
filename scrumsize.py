@@ -54,8 +54,8 @@ class Vote(ndb.Model):
 
 class Player(ndb.Model):
     """Models a user's attendance in a game"""
-    user = ndb.UserProperty()
-    when = ndb.DateTimeProperty(auto_now=True)
+    user = ndb.UserProperty(indexed=True)
+    when = ndb.DateTimeProperty(auto_now=True, indexed=True)
     idle_since = ndb.DateTimeProperty(auto_now_add=True)
 
     @classmethod
